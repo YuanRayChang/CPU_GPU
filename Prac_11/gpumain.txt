@@ -1,0 +1,118 @@
+#include "gpumain.h"
+
+// Declare important variables
+float *d_a;	// Device variable
+float *d_b;
+float *d_body;
+float *h_a;
+float *h_body;
+float *h_b;
+float *h_c;
+__global__ void GPUFunction(float *a);
+__global__ void GPUSerialFunction(float *a);
+__global__ void GPUTakeTimeStep(float *a, float *b,int *body);
+
+void Allocate_Memory() {
+	size_t size = N*sizeof(float);
+	cudaError_t Error;
+	h_a = (float*)malloc(size);
+	h_body=(float*)malloc(size);
+	h_b = (float*)malloc(size);
+	h_c = (float*)malloc(2*size); 
+	Error = cudaMalloc((void**)&d_a,size); 
+                printf("CUDA error (malloc d_a) = %s\n",    
+                cudaGetErrorString(Error));
+	Error = cudaMalloc((void**)&d_b,size);
+                printf("CUDA error (malloc d_b) = %s\n",
+                cudaGetErrorString(Error));
+	Error = cudaMalloc((void**)&d_body,size);
+                printf("CUDA error (malloc d_body) = %s\n",
+                cudaGetErrorString(Error));
+}
+
+void Free_Memory() {
+	if (h_a) free(h_a);
+	if (h_body) free(h_body);
+	if (h_b) free(h_b);
+	if (h_c) free(h_c);
+	if (d_a) cudaFree(d_a);
+	if (d_b) cudaFree(d_b);
+	if (d_body) cudaFree(d_body);
+}
+
+void Copy_memory(){
+size_t size=N*sizeof(float);
+cudaError_t Error;
+Error=cudaMemcpy(d_a,h_a,size,cudaMemcpyHostToDevice);
+printf("CUDA error (memcpy h_a -> d-a)=%s\n",cudaGetErrorString(Error));
+
+//Error=cudaMemcpy(d_a+N,h_b,size,cudaMemcpyHostToDevice);
+//printf("CUDA error (memcpy h_b -> d-a)=%s\n",cudaGetErrorString(Error));
+//Error=cudaMemcpy(h_c,d_a,2*size,cudaMemcpyDeviceToHost);
+//printf("CUDA error (memcpy d_a -> h_c)=%s\n",cudaGetErrorString(Error));
+
+}
+
+void Send_To_Device()
+{
+size_t size=N*sizeof(float);
+cudaError_t Error;
+Error=cudaMemcpy(d_a,h_a,size,cudaMemcpyHostToDevice);
+printf("CUDA error (memcpy h_a -> d_a) = %s\n",cudaGetErrorString(Error));
+
+}
+
+void Get_From_Device()
+{
+size_t size=N*sizeof(float);
+cudaError_t Error;
+Error=cudaMemcpy(h_b,d_a,size,cudaMemcpyDeviceToHost);
+printf("CUDA error (memcpy d_a -> h_b) = %s\n",cudaGetErrorString(Error));
+
+}
+
+void Call_GPUSerial_Function(){
+int threadsPerBlock=1;
+int blocksPerGrid=1;
+GPUSerialFunction<<<blocksPerGrid,threadsPerBlock>>>(d_a);
+}
+
+__global__ void GPUSerialFunction(float* a){
+int i;
+for(i=0;i<N;i++){
+a[i]=2.0*a[i];
+
+}
+
+}
+
+__global__ void GPUFunction(float *a){
+
+int i=blockDim.x*blockIdx.x+threadIdx.x;
+if(i<N){
+
+a[i]=sqrt(a[i]);
+}
+}
+
+void Call_GPUFunction(){
+int threadsPerBlock=256;
+int blocksPerGrid=(N+threadsPerBlock-1)/threadsPerBlock;
+GPUFunction<<<blocksPerGrid,threadsPerBlock>>>(d_a);
+}
+
+
+__global__ void GPUTakeTimeStep(float *a, float *b,int *body){
+
+int i=blockDim.x*blockIdx.x+threadIdx.x;
+int x_cell,y_cell;
+float left,right,top,bottom;
+
+if(i<N){
+x_cell=(int)(i/NY);
+y_cell=(int)(i-x_cell*NY);
+
+
+}
+
+}
