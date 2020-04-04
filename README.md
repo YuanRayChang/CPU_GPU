@@ -1,2 +1,2 @@
 # CPU_GPU
-INTRODUCTION TO MULTI-CORE CPU AND GPU COMPUTATION
+Introduction to multi-core CPU and GPU computation course
